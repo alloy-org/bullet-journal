@@ -4,6 +4,40 @@ const path = require("node:path");
 
 const outdir = "build";
 
+function buildHTML(javacript) {
+  const base64JavascriptContent = Buffer.from(javacript).toString("base64");
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" /></head>
+<body>
+    <div id="root"></div>
+    <script type="text/javascript" src="data:text/javascript;base64,${ base64JavascriptContent }"></script>
+</body>
+</html>
+  `;
+}
+
+function buildMarkdown(html) {
+  return `
+|||
+|-|-|
+|name|example plugin|
+
+\`\`\`
+{
+  appOption(app) {
+    app.openSidebarEmbed();
+  },
+  renderEmbed(app) {
+    return \`${ html }\`;
+  },
+}
+\`\`\`
+  `;
+}
+
 const packageNotePlugin = {
   name: "package-note-plugin",
   setup(build) {
@@ -16,20 +50,11 @@ const packageNotePlugin = {
       } else {
         const [ file ] = outputFiles;
 
-        const base64JavascriptContent = Buffer.from(file.text).toString("base64");
-        const htmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8" /></head>
-<body>
-    <div id="root"></div>
-    <script type="text/javascript" src="data:text/javascript;base64,${ base64JavascriptContent }"></script>
-</body>
-</html>
-        `;
+        const htmlContent = buildHTML(file.text)
+        const markdownContent = buildMarkdown(htmlContent);
 
-        const htmlPath = path.join(path.dirname(file.path), "index.html");
-        fs.writeFileSync(htmlPath, htmlContent);
+        const markdownPath = path.join(path.dirname(file.path), "note.md");
+        fs.writeFileSync(markdownPath, markdownContent);
       }
     });
   }
