@@ -16,13 +16,14 @@ const packageNotePlugin = {
       } else {
         const [ file ] = outputFiles;
 
+        const base64JavascriptContent = Buffer.from(file.text).toString("base64");
         const htmlContent = `
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8" /></head>
 <body>
     <div id="root"></div>
-    <script type="text/javascript">${ file.text }</script>
+    <script type="text/javascript" src="data:text/javascript;base64,${ base64JavascriptContent }"></script>
 </body>
 </html>
         `;
