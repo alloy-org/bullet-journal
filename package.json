@@ -1,0 +1,9 @@
+{
+  "name": "amplenote-embed-starter",
+  "version": "1.0.0",
+  "description": "Starter project for Amplenote embed plugins",
+  "main": "index.js",
+  "author": "Amplenote",
+  "license": "MIT",
+  "private": false
+}
