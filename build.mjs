@@ -66,13 +66,11 @@ const serveBuildPlugin = {
   setup(build) {
     const options = build.initialOptions;
     options.write = false;
-    console.log("setup")
 
-    build.onEnd((errors, outputFiles) => {
+    build.onEnd(({ errors, outputFiles }) => {
       if (errors.length > 0) {
         error(`Build failed: ${ errors }`);
       } else {
-        console.log("outputFiles", outputFiles)
         const [ file ] = outputFiles;
 
         const htmlContent = buildHTML(file.text);
@@ -104,7 +102,7 @@ if (IS_DEV) {
 
   serve.start({
     port: 5000,
-    root: "./www",
+    root: "./build",
     live: true,
   });
 } else {

@@ -20,3 +20,7 @@ The following plugin actions are implemented in the plugin:
 
 - `appOption` triggering the plugin via the quick open menu will open a sidebar embed for the plugin
 - `renderEmbed` handles rendering the sidebar embed, rendering this application in the sidebar
+
+# Development
+
+Run `yarn dev` to serve the application locally, with automatic reloading on filesystem changes.
