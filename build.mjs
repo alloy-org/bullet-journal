@@ -42,6 +42,10 @@ function buildMarkdown(html) {
   renderEmbed(app) {
     return \`${ html }\`;
   },
+  onEmbedCall(app, ...args) {
+    console.log("onEmbedCall", args);
+    return "result";
+  },
 }
 \`\`\`
   `;
@@ -75,9 +79,16 @@ const serveBuildPlugin = {
     const options = build.initialOptions;
     options.write = false;
 
+    // `window.callAmplenotePlugin` will be defined in the real embed environment
+    options.banner = {
+      js: `window.callAmplenotePlugin = function(...args) {
+            console.log("window.callAmplenotePlugin", args);
+          }`,
+    }
+
     build.onEnd(({ errors, outputFiles }) => {
       if (errors.length > 0) {
-        error(`Build failed: ${ errors }`);
+        error(`Build failed: ${ JSON.stringify(errors) }`);
       } else {
         const [ file ] = outputFiles;
 
