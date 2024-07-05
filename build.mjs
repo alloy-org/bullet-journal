@@ -78,11 +78,12 @@ const serveBuildPlugin = {
   setup(build) {
     const options = build.initialOptions;
     options.write = false;
+    options.sourcemap = true;
 
     // `window.callAmplenotePlugin` will be defined in the real embed environment
     options.banner = {
       js: `window.callAmplenotePlugin = function(...args) {
-            console.log("window.callAmplenotePlugin", args);
+            console.log("window.callAmplenotePlugin", ...args);
           }`,
     }
 
@@ -90,14 +91,21 @@ const serveBuildPlugin = {
       if (errors.length > 0) {
         error(`Build failed: ${ JSON.stringify(errors) }`);
       } else {
-        const [ file ] = outputFiles;
+        outputFiles.forEach(file => {
+          const { path: outputPath } = file;
 
-        const javascriptPath = path.join(path.dirname(file.path), "index.js");
-        fs.writeFileSync(javascriptPath, file.text);
+          if (outputPath.match(/\.js$/)) {
+            const javascriptPath = path.join(path.dirname(outputPath), "index.js");
+            fs.writeFileSync(javascriptPath, file.text);
 
-        const htmlContent = buildHTML(null, "./index.js");
-        const htmlPath = path.join(path.dirname(file.path), "index.html");
-        fs.writeFileSync(htmlPath, htmlContent);
+            const htmlContent = buildHTML(null, "./index.js");
+            const htmlPath = path.join(path.dirname(outputPath), "index.html");
+            fs.writeFileSync(htmlPath, htmlContent);
+          } else if (outputPath.match(/\.js.map$/)) {
+            const sourcemapPath = path.join(path.dirname(outputPath), "index.js.map");
+            fs.writeFileSync(sourcemapPath, file.text);
+          }
+        });
 
         serve.update();
       }
