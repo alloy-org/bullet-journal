@@ -82,9 +82,7 @@ const serveBuildPlugin = {
 
     // `window.callAmplenotePlugin` will be defined in the real embed environment
     options.banner = {
-      js: `window.callAmplenotePlugin = function(...args) {
-            console.log("window.callAmplenotePlugin", ...args);
-          }`,
+      js: `(() => { window.callAmplenotePlugin = function(args) { console.log("window.callAmplenotePlugin", args); }; })();`,
     }
 
     build.onEnd(({ errors, outputFiles }) => {
