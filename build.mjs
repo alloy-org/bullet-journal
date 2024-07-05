@@ -5,8 +5,16 @@ import path from "node:path";
 
 const IS_DEV = process.argv.includes("--dev");
 
-function buildHTML(javacript) {
-  const base64JavascriptContent = Buffer.from(javacript).toString("base64");
+function buildHTML(javascriptContent, javascriptPath) {
+  let scriptTag;
+  if (javascriptContent) {
+    const base64JavascriptContent = Buffer.from(javascriptContent).toString("base64");
+    scriptTag = `<script type="text/javascript" src="data:text/javascript;base64,${ base64JavascriptContent }"></script>`;
+  } else if (javascriptPath) {
+    scriptTag = `<script type="text/javascript" src="${ javascriptPath }"></script>`;
+  } else {
+    throw new Error("one of javascriptContent or javascriptPath must be provided");
+  }
 
   return `
 <!DOCTYPE html>
@@ -14,7 +22,7 @@ function buildHTML(javacript) {
 <head><meta charset="utf-8" /></head>
 <body>
     <div id="root"></div>
-    <script type="text/javascript" src="data:text/javascript;base64,${ base64JavascriptContent }"></script>
+    ${ scriptTag }
 </body>
 </html>
   `;
@@ -73,7 +81,10 @@ const serveBuildPlugin = {
       } else {
         const [ file ] = outputFiles;
 
-        const htmlContent = buildHTML(file.text);
+        const javascriptPath = path.join(path.dirname(file.path), "index.js");
+        fs.writeFileSync(javascriptPath, file.text);
+
+        const htmlContent = buildHTML(null, "./index.js");
         const htmlPath = path.join(path.dirname(file.path), "index.html");
         fs.writeFileSync(htmlPath, htmlContent);
 
