@@ -134,6 +134,5 @@ if (IS_DEV) {
     live: true,
   });
 } else {
-  const context = await esbuild.context(buildOptions);
-  await context.build();
+  await esbuild.build(buildOptions);
 }
