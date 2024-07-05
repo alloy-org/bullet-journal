@@ -20,6 +20,10 @@ The following plugin actions are implemented in the plugin:
 
 - `appOption` triggering the plugin via the quick open menu will open a sidebar embed for the plugin
 - `renderEmbed` handles rendering the sidebar embed, rendering this application in the sidebar
+- `onEmbedCall` called when `window.callAmplenotePlugin` is called from the embed code in this project
+
+The `renderEmbed` action output by this plugin can remain unchanged in the final plugin, but it's likely that the
+`appOption` and `onEmbedCall` actions will need to be customized to fit the needs of the final plugin.
 
 # Development
 
