@@ -204,7 +204,7 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
         const dataTagBase = await this._baseDataTag(app);
         let dataNoteTag = await app.settings[this.constants.SETTING_KEY_DATA_TAG_APPLIED];
         if (!dataNoteTag && dataTagBase) {
-          dataNoteTag = `${dataTagBase}/five-questions`;
+          dataNoteTag = [`${dataTagBase}/five-questions`];
         }
         let newNote = await app.createNote(noteDataName, dataNoteTag || []);
         console.debug("new data note is", newNote, "with tag", dataNoteTag);
