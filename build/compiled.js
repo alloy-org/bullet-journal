@@ -152,6 +152,9 @@
       }
       const receivedDayRating = Array.isArray(userDayRatingResponse) && userDayRatingResponse[0].length;
       const formattedRating = receivedDayRating ? this._formattedDayRating(userDayRatingResponse[0]) : null;
+      if (receivedDayRating) {
+        console.debug("Received day rating, formattedRating is", formattedRating);
+      }
       let tableMarkdown = `# ${sectionName}
 `;
       tableMarkdown += `| **Bullet Journal Note** | **Day Rating** | **Precipitating events** | **Captured at** |
