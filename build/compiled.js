@@ -21,7 +21,7 @@
 2. 
 3. 
 
-
+###
 # What did I learn today?
 * 
 
@@ -94,7 +94,7 @@
     },
     // --------------------------------------------------------------------------------------
     async _queryRecordMoodLevel(app) {
-      const moodOptions = [-2, -1, 0, 1, 2].map((value) => ({ value, label: `${value}` }));
+      const moodOptions = [-2, -1, 0, 1, 2].map((value) => ({ value: `${value}`, label: `${value}` }));
       const result = await app.prompt("Today will be remembered as (optional)", {
         inputs: [
           { label: "Frivolous/terrible (-2) to successful/wonderful (+2)", type: "radio", options: moodOptions, value: "0" },
@@ -141,7 +141,7 @@
         console.debug("Found existing data table content, length", existingTable.length);
       } else {
         console.log("No existing data table could be found. Creating data table section");
-        await app.insertNoteContent(this._dataNoteHandle, `# ${sectionName}
+        await app.insertNoteContent(await this._dataNote(app), `# ${sectionName}
 `);
         existingTable = "";
       }
@@ -149,10 +149,10 @@
       console.debug("userDayRatingResponse was", userDayRatingResponse);
       let tableMarkdown = `# ${sectionName}
 `;
-      tableMarkdown += `| **Daily Questions Note** | **Day Rating** | **Precipitating events** |
-| --- | --- | --- |
+      tableMarkdown += `| **Daily Questions Note** | **Day Rating** | **Precipitating events** | **Captured at** |
+| --- | --- | --- | --- |
 `;
-      tableMarkdown += `| [[${this._dailyQuestionNoteHandle.name}]] | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} |
+      tableMarkdown += `| [${this._dailyQuestionNoteHandle.name}](/notes/${this._dailyQuestionNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleDateString()} |
 `;
       tableMarkdown += existingTable;
       const dailyQuestionContent = await app.getNoteContent(this._dailyQuestionNoteHandle);
@@ -165,11 +165,11 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
           { atEnd: true }
         );
       }
-      await app.replaceNoteContent(this._dataNoteHandle, tableMarkdown, { heading: { text: sectionName, level: 2 } });
+      await app.replaceNoteContent(await this._dataNote(app), tableMarkdown, { heading: { text: sectionName, level: 2 } });
     },
     // --------------------------------------------------------------------------------------
     async _tableData(app, sectionName) {
-      const content = await app.getNoteContent(this._dataNoteHandle);
+      const content = await app.getNoteContent(await this._dataNote(app));
       let existingTable = "";
       if (content.includes(`# ${sectionName}`)) {
         existingTable = await this._sectionContent(content, sectionName);
@@ -186,18 +186,22 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
       }
     },
     // --------------------------------------------------------------------------------------
-    async _fetchDataNote(app, { noteDataName = null } = {}) {
-      if (this._dataNoteHandle)
+    async _dataNote(app) {
+      if (this._dataNoteHandle) {
         return this._dataNoteHandle;
-      noteDataName = noteDataName || await this._fetchNoteDataName(app);
-      const existingNote = await app.findNote({ name: noteDataName });
-      if (existingNote) {
-        this._dataNoteHandle = existingNote;
-        return existingNote;
+      } else {
+        const noteDataName = await this._fetchNoteDataName(app);
+        const existingNote = await app.findNote({ name: noteDataName });
+        if (existingNote) {
+          this._dataNoteHandle = existingNote;
+          return existingNote;
+        }
+        const newNote = await app.createNote(noteDataName, this.constants.DEFAULT_NOTE_DATA_TAGS);
+        console.debug("newNote is", newNote);
+        this._dataNoteHandle = await app.findNote({ uuid: newNote.uuid });
+        console.debug("this._dataNoteHandle is", this._dataNoteHandle);
+        return this._dataNoteHandle;
       }
-      const note = await app.createNote(noteDataName, this.constants.DEFAULT_NOTE_DATA_TAGS);
-      this._dataNoteHandle = note;
-      return note;
     },
     // --------------------------------------------------------------------------------------
     async _fetchNoteDataName(app) {
