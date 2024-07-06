@@ -39,9 +39,9 @@
     dailyJotOption: {
       "Five questions": {
         async run(app) {
-          const note = await this._ensureDailyFiveQuestionNote(app);
-          await this._visitDailyFiveQuestionNote(app, note);
-          await this._queryRecordMoodLevel(app, note);
+          await this._ensureDailyFiveQuestionNote(app);
+          await this._visitDailyFiveQuestionNote(app);
+          await this._queryRecordMoodLevel(app);
         },
         async check(app) {
           const note = await this._fetchDataNote(app);
@@ -57,10 +57,10 @@
     },
     // --------------------------------------------------------------------------------------
     appOption: {
-      "Five question entry": async function(app) {
-        const note = await this._ensureDailyFiveQuestionNote(app);
-        await this._visitDailyFiveQuestionNote(app, note);
-        await this._queryRecordMoodLevel(app, note);
+      "Capture five question entry": async function(app) {
+        await this._ensureDailyFiveQuestionNote(app);
+        await this._visitDailyFiveQuestionNote(app);
+        await this._queryRecordMoodLevel(app);
       }
     },
     // --------------------------------------------------------------------------------------
@@ -76,17 +76,19 @@
         const firstLine = FIVE_QUESTION_MARKDOWN.split("\n")[0];
         const content = await app.getNoteContent(note);
         if (content?.includes(firstLine)) {
-          return note;
+          console.log("Note content already includes five questions, returning existing");
+          this._dailyQuestionNoteHandle = note;
+          return;
         }
       } else {
         const noteUUID = await app.createNote(findArgument.name, findArgument.tags);
         note = await app.findNote({ uuid: noteUUID });
       }
       await note.insertContent(FIVE_QUESTION_MARKDOWN);
-      return note;
+      this._dailyQuestionNoteHandle = note;
     },
     // --------------------------------------------------------------------------------------
-    async _queryRecordMoodLevel(app, fiveQuestionNote) {
+    async _queryRecordMoodLevel(app) {
       const noteDataTableName = await this._fetchNoteDataName(app);
       const moodOptions = [-2, -1, 0, 2, 2].map((value) => ({ value, label: value }));
       const result = await app.prompt("Today will be remembered as (optional)", { inputs: [
@@ -94,7 +96,7 @@
         { label: "Factors contributing to this rating?", type: "text" }
       ] });
       const dataNote = await this._fetchDataNote(app, { noteDataName: noteDataTableName });
-      await this._persistData(app, fiveQuestionNote, dataNote, this.constants.TABLE_SECTION_NAME, result);
+      await this._persistData(app, this._dailyQuestionNoteHandle, dataNote, this.constants.TABLE_SECTION_NAME, result);
     },
     // --------------------------------------------------------------------------------------
     async _noteName(app) {
@@ -117,15 +119,15 @@
       }
     },
     // --------------------------------------------------------------------------------------
-    async _visitDailyFiveQuestionNote(app, note) {
+    async _visitDailyFiveQuestionNote(app) {
       const tagArray = await this._noteTagArray(app);
       let navigateUrl;
       if (tagArray?.length) {
         navigateUrl = `https://www.amplenote.com/notes/jots?tag=${tagArray[0]}`;
       } else {
-        navigateUrl = `https://www.amplenote.com/notes/${note.uuid}`;
+        navigateUrl = `https://www.amplenote.com/notes/${this._dailyQuestionNoteHandle.uuid}`;
       }
-      await app.navigate(note);
+      await app.navigate(navigateUrl);
     },
     // --------------------------------------------------------------------------------------
     async _persistData(app, dailyQuestionNote, dateTableNote, sectionName, userDayRatingResponse) {
