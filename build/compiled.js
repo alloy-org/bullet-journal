@@ -156,7 +156,7 @@
       tableMarkdown += `| **Bullet Journal Note** | **Day Rating** | **Precipitating events** | **Captured at** |
 | --- | --- | --- | --- |
 `;
-      tableMarkdown += `| [${this._bulletNoteHandle.name}](/notes/${this._bulletNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1].replace(/\n/g, "\\") : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleString()} |
+      tableMarkdown += `| [${this._bulletNoteHandle.name}](/notes/${this._bulletNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1].replace(/\n/g, "\\") : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleString(navigator.language, { second: false })} |
 `;
       tableMarkdown += existingTable;
       if (receivedDayRating) {
@@ -167,7 +167,7 @@
           await app.replaceNoteContent(
             this._bulletNoteHandle,
             `${sectionContent}
-- Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}: ${userDayRatingResponse[0]}${userDayRatingResponse[1]?.length ? `
+- Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString(navigator.language, { second: false })}: ${userDayRatingResponse[0]}${userDayRatingResponse[1]?.length ? `
     - Precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
             { heading: { text: "Day Rating" } }
           );
@@ -175,7 +175,7 @@
           await app.insertNoteContent(
             this._bulletNoteHandle,
             `# Day Rating
-* Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}: ${userDayRatingResponse[0] || "N/A"}${userDayRatingResponse[1]?.length ? `
+* Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString(navigator.language, { second: false })}: ${userDayRatingResponse[0] || "N/A"}${userDayRatingResponse[1]?.length ? `
     - Precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
             { atEnd: true }
           );
