@@ -71,6 +71,7 @@
       const noteName = await this._noteName(app);
       let findArgument = { name: noteName };
       const tagsApplied = await this._bulletJournalTagArray(app);
+      console.debug("Received bullet journal tag array", tagsApplied);
       if (tagsApplied.length) {
         findArgument = { ...findArgument, tags: tagsApplied };
       }
@@ -79,12 +80,12 @@
         const firstLine = FIVE_QUESTION_MARKDOWN.split("\n")[0];
         const content = await app.getNoteContent(note);
         if (content?.includes(firstLine)) {
-          console.log("Note content already includes five questions, returning existing");
+          console.log("Note content already includes journal, returning existing");
           this._bulletNoteHandle = note;
           return;
         }
       } else {
-        const noteUUID = await app.createNote(findArgument.name, findArgument.tags);
+        const noteUUID = await app.createNote(findArgument.name, findArgument.tags || []);
         note = await app.findNote({ uuid: noteUUID });
       }
       await app.insertNoteContent({ uuid: note.uuid }, FIVE_QUESTION_MARKDOWN);
@@ -107,9 +108,9 @@
       const userLocale = navigator?.language || "en-US";
       if (dateSetting?.length) {
         console.log("Using setting from user", dateSetting);
-        return `${(/* @__PURE__ */ new Date()).toLocaleDateString(userLocale, dateSetting)} Five Questions`;
+        return `${(/* @__PURE__ */ new Date()).toLocaleDateString(userLocale, dateSetting)} Bullet Journal`;
       } else {
-        return `${(/* @__PURE__ */ new Date()).toLocaleDateString(userLocale, { year: "numeric", month: "long", day: "numeric" })} Five Questions`;
+        return `${(/* @__PURE__ */ new Date()).toLocaleDateString(userLocale, { year: "numeric", month: "long", day: "numeric" })} Bullet Journal`;
       }
     },
     // --------------------------------------------------------------------------------------
@@ -205,7 +206,7 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
         if (!dataNoteTag && dataTagBase) {
           dataNoteTag = `${dataTagBase}/five-questions`;
         }
-        const newNote = await app.createNote(noteDataName, dataNoteTag);
+        let newNote = await app.createNote(noteDataName, dataNoteTag || []);
         console.debug("new data note is", newNote, "with tag", dataNoteTag);
         this._dataNoteHandle = await app.findNote({ uuid: newNote.uuid });
         console.debug("this._dataNoteHandle is", this._dataNoteHandle);
@@ -217,7 +218,7 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
       let noteDataName = await app.settings[this.constants.SETTING_KEY_NOTE_DATA];
       if (!noteDataName) {
         const result = await app.prompt(
-          `Enter the name of the note in which you'd like to record a table with links to your Five Question entries (leave blank for the default of "${this.constants.DEFAULT_NOTE_DATA_NAME}")`,
+          `Enter the name of the note in which you'd like to record a table with links to your Bullet Journal entries (leave blank for the default of "${this.constants.DEFAULT_NOTE_DATA_NAME}")`,
           { inputs: [{ type: "text" }] }
         );
         noteDataName = result[0] || this.constants.DEFAULT_NOTE_DATA_NAME;
@@ -231,8 +232,11 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
         const candidateNoteHandles = await app.filterNotes({ tag: tagBaseCandidate });
         if (candidateNoteHandles.length) {
           return tagBaseCandidate;
+        } else {
+          console.debug("No notes exist for tag", tagBaseCandidate);
         }
       }
+      console.debug("No good base tag found for data note");
     },
     // --------------------------------------------------------------------------------------
     // Return all of the markdown within a section that begins with `sectionHeadingText`
