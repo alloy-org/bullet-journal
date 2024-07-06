@@ -161,8 +161,10 @@
       tableMarkdown += existingTable;
       if (receivedDayRating) {
         const existingJournalContent = await app.getNoteContent(this._bulletNoteHandle);
-        let insertContent = `- Rating as of ${(/* @__PURE__ */ new Date()).toLocaleTimeString(navigator.language, { hour: "2-digit", minute: "2-digit", hour12: true })}: ${userDayRatingResponse[0] || "N/A"}${userDayRatingResponse[1]?.length ? `
+        const formattedRating = this._formattedDayRating(userDayRatingResponse[0].trim());
+        let insertContent = `- Rating as of ${(/* @__PURE__ */ new Date()).toLocaleTimeString(navigator.language, { hour: "2-digit", minute: "2-digit", hour12: true })}: ${formattedRating}${userDayRatingResponse[1]?.length ? `
     - Precipitating factors: ${userDayRatingResponse[1]}` : ""}`;
+        console.log("Inserting", insertContent);
         if (!existingJournalContent?.includes("# Day Rating")) {
           insertContent = `
 # Day Rating
@@ -172,6 +174,15 @@ ${insertContent}`;
       }
       const dataNote = await this._dataNote(app);
       await app.replaceNoteContent(dataNote, tableMarkdown, { heading: { text: sectionName } });
+    },
+    // --------------------------------------------------------------------------------------
+    _formattedDayRating(userDayRating) {
+      const numericBackgroundColor = { "-2": "12", "-1": "1", "1": "4", "2": "15" }[userDayRating];
+      let formattedRating = `**${userDayRating}**`;
+      if (numericBackgroundColor) {
+        formattedRating = `**==${userDayRating}<!-- {"backgroundColor":"${numericBackgroundColor}"} -->==**`;
+      }
+      return formattedRating;
     },
     // --------------------------------------------------------------------------------------
     // Return an array of the rows from the bullet journal data table (absent its two header rows), or undefined if
