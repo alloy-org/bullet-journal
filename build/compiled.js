@@ -5,20 +5,26 @@
 2. 
 3. 
 
+
 # What would make today great?
-* 1. 
-* 2. 
-* 3. 
+1. 
+2. 
+3. 
+
 
 # Daily affirmation
 * [ ] Some ideas from [TheGoodTrade](https://www.thegoodtrade.com/features/positive-affirmations-morning-routine/)
+
+
 
 # Highlights of the day
 1. 
 2. 
 3. 
 
+
 # What did I learn today?
+
 
 
 `;
@@ -84,13 +90,13 @@
         const noteUUID = await app.createNote(findArgument.name, findArgument.tags);
         note = await app.findNote({ uuid: noteUUID });
       }
-      await note.insertContent(FIVE_QUESTION_MARKDOWN);
+      await app.insertNoteContent({ uuid: note.uuid }, FIVE_QUESTION_MARKDOWN);
       this._dailyQuestionNoteHandle = note;
     },
     // --------------------------------------------------------------------------------------
     async _queryRecordMoodLevel(app) {
       const noteDataTableName = await this._fetchNoteDataName(app);
-      const moodOptions = [-2, -1, 0, 2, 2].map((value) => ({ value, label: value }));
+      const moodOptions = [-2, -1, 0, 1, 2].map((value) => ({ value, label: `${value}` }));
       const result = await app.prompt("Today will be remembered as (optional)", { inputs: [
         { label: "Frivolous/terrible (-2) to successful/wonderful (+2)", type: "radio", options: moodOptions },
         { label: "Factors contributing to this rating?", type: "text" }
