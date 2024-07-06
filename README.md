@@ -1,30 +1,19 @@
-# Amplenote Plugin Embed Starter Project
+# Tim Ferriss-inspired (NOT endorsed) daily prompts
 
-This project provides a basic starting point for developing a
-React-based application that can be rendered in an Amplenote
-embed.
+As a [Five Bullet Friday subscriber](https://go.tim.blog/5-bullet-friday-1/), I've often been directed to Tim's Twitter/X
+page, which in June 2024 posted a video with example questions in a bullet journal:
 
-# Getting Started
+[Tim Ferriss showing a five bullet journal](https://twitter.com/tferriss/status/1808838290008588460)
 
-1. Clone this repository
-2. Install dependencies with `yarn install`
-3. Create a build with `yarn build`
+For the digitally-inclined, this plugin adds an [Amplenote Daily Jot Suggestion](https://www.amplenote.com/help/jots_suggestions)
+that will insert the provocative questions from the journal shown in the video:
 
-# Output
+1. I am grateful for... (3 responses)
+2. What would make today great (3 responses)
+3. Daily affirmation
+4. Highlights of the day (3 responses)
+5. What did I learn today?
 
-The output of the build step is a markdown note that can be
-used as a plugin note in Amplenote. Import this note and
-enable it as a plugin in your Amplenote account.
+Your responses to these questions will be tagged with a hierarchy of your choosing (e.g., `daily-jots/five-questions` or `personal/daily-data`). 
 
-The following plugin actions are implemented in the plugin:
-
-- `appOption` triggering the plugin via the quick open menu will open a sidebar embed for the plugin
-- `renderEmbed` handles rendering the sidebar embed, rendering this application in the sidebar
-- `onEmbedCall` called when `window.callAmplenotePlugin` is called from the embed code in this project
-
-The `renderEmbed` action output by this plugin can remain unchanged in the final plugin, but it's likely that the
-`appOption` and `onEmbedCall` actions will need to be customized to fit the needs of the final plugin.
-
-# Development
-
-Run `yarn dev` to serve the application locally, with automatic reloading on filesystem changes.
+A table will also be created with links to all your daily entries, for convenient perusal.
