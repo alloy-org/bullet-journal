@@ -32,29 +32,27 @@
   var plugin = {
     // --------------------------------------------------------------------------------------
     constants: {
-      DEFAULT_NOTE_DATA_NAME: "Five Question Data",
-      DEFAULT_NOTE_DATA_TAGS: ["daily-jots/five-questions"],
-      TABLE_SECTION_NAME: `"Five Question" Daily Entries`,
+      DEFAULT_NOTE_DATA_NAME: "Bullet Journal Data",
+      DEFAULT_QUESTION_NOTE_TAGS: ["daily-jots/bullet-journal"],
+      TABLE_SECTION_NAME: `"Bullet Journal" Entries`,
       SETTING_KEY_NOTE_DATA: "Name of note where table is recorded",
       SETTING_KEY_DATE_FORMAT: "Date format, see plugin documentation",
-      SETTING_KEY_TAG_APPLIED: "Tag(s) to apply to daily Five Question entries (default 'daily-jots/five-questions')"
+      SETTING_KEY_TAG_APPLIED: "Tag(s) to apply to daily Daily Bullet entries (default 'daily-jots/bullet-journal')",
+      SETTING_KEY_DATA_TAG_APPLIED: "Tag to apply to data note"
     },
     // --------------------------------------------------------------------------
     // https://www.amplenote.com/help/developing_amplenote_plugins#dailyJotOption
     dailyJotOption: {
-      "Five questions": {
+      "Bullet journal": {
         async run(app) {
-          await this._ensureDailyFiveQuestionNote(app);
-          await this._visitDailyFiveQuestionNote(app);
+          await this._ensureBulletJournalNote(app);
+          await this._visitBulletJournalNote(app);
           await this._queryRecordMoodLevel(app);
         },
         async check(app) {
-          const note = await this._fetchDataNote(app);
-          if (!note)
-            return false;
-          const tableMarkdown = await this._tableData(app, note, this.constants.TABLE_SECTION_NAME);
+          const tableMarkdown = await this._tableData(app, this.constants.TABLE_SECTION_NAME);
           if (!tableMarkdown)
-            return false;
+            return true;
           const todayString = (/* @__PURE__ */ new Date()).toLocaleDateString();
           return !tableMarkdown.includes(todayString);
         }
@@ -62,17 +60,17 @@
     },
     // --------------------------------------------------------------------------------------
     appOption: {
-      "Capture five question entry": async function(app) {
-        await this._ensureDailyFiveQuestionNote(app);
-        await this._visitDailyFiveQuestionNote(app);
+      "Capture bullet journal entry": async function(app) {
+        await this._ensureBulletJournalNote(app);
+        await this._visitBulletJournalNote(app);
         await this._queryRecordMoodLevel(app);
       }
     },
     // --------------------------------------------------------------------------------------
-    async _ensureDailyFiveQuestionNote(app) {
+    async _ensureBulletJournalNote(app) {
       const noteName = await this._noteName(app);
       let findArgument = { name: noteName };
-      const tagsApplied = await this._noteTagArray(app);
+      const tagsApplied = await this._bulletJournalTagArray(app);
       if (tagsApplied.length) {
         findArgument = { ...findArgument, tags: tagsApplied };
       }
@@ -82,7 +80,7 @@
         const content = await app.getNoteContent(note);
         if (content?.includes(firstLine)) {
           console.log("Note content already includes five questions, returning existing");
-          this._dailyQuestionNoteHandle = note;
+          this._bulletNoteHandle = note;
           return;
         }
       } else {
@@ -90,7 +88,7 @@
         note = await app.findNote({ uuid: noteUUID });
       }
       await app.insertNoteContent({ uuid: note.uuid }, FIVE_QUESTION_MARKDOWN);
-      this._dailyQuestionNoteHandle = note;
+      this._bulletNoteHandle = note;
     },
     // --------------------------------------------------------------------------------------
     async _queryRecordMoodLevel(app) {
@@ -115,22 +113,28 @@
       }
     },
     // --------------------------------------------------------------------------------------
-    async _noteTagArray(app) {
+    async _bulletJournalTagArray(app) {
       const tagSetting = await app.settings[this.constants.SETTING_KEY_TAG_APPLIED];
       if (tagSetting?.length) {
         return tagSetting.split(",").map((tag) => tag.trim()).filter((n) => n);
       } else {
-        return this.constants.DEFAULT_NOTE_DATA_TAGS;
+        let bulletJournalNoteTags = [this.constants.DEFAULT_QUESTION_NOTE_TAGS];
+        const baseTag = await this._baseDataTag(app);
+        if (baseTag) {
+          bulletJournalNoteTags.concat(`${baseTag}/bullet-journal`);
+        }
+        return bulletJournalNoteTags;
       }
     },
     // --------------------------------------------------------------------------------------
-    async _visitDailyFiveQuestionNote(app) {
-      const tagArray = await this._noteTagArray(app);
+    async _visitBulletJournalNote(app) {
+      const tagArray = await this._bulletJournalTagArray(app);
       let navigateUrl;
       if (tagArray?.length) {
-        navigateUrl = `https://www.amplenote.com/notes/jots?tag=${tagArray[0]}`;
+        navigateUrl = `https://www.amplenote.com/notes/jots?tag=${tagArray[tagArray.length - 1]}`;
+        console.debug("Navigating to jot tag", navigateUrl);
       } else {
-        navigateUrl = `https://www.amplenote.com/notes/${this._dailyQuestionNoteHandle.uuid}`;
+        navigateUrl = `https://www.amplenote.com/notes/${this._bulletNoteHandle.uuid}`;
       }
       await app.navigate(navigateUrl);
     },
@@ -152,13 +156,13 @@
       tableMarkdown += `| **Daily Questions Note** | **Day Rating** | **Precipitating events** | **Captured at** |
 | --- | --- | --- | --- |
 `;
-      tableMarkdown += `| [${this._dailyQuestionNoteHandle.name}](/notes/${this._dailyQuestionNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleDateString()} |
+      tableMarkdown += `| [${this._bulletNoteHandle.name}](/notes/${this._bulletNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleDateString()} |
 `;
       tableMarkdown += existingTable;
-      const dailyQuestionContent = await app.getNoteContent(this._dailyQuestionNoteHandle);
+      const dailyQuestionContent = await app.getNoteContent(this._bulletNoteHandle);
       if (receivedDayRating && !dailyQuestionContent.includes("Day Rating")) {
         await app.insertNoteContent(
-          this._dailyQuestionNoteHandle,
+          this._bulletNoteHandle,
           `# Day Rating
 Rating given: ${userDayRatingResponse[0] || "N/A"}
 ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
@@ -190,32 +194,45 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
       if (this._dataNoteHandle) {
         return this._dataNoteHandle;
       } else {
-        const noteDataName = await this._fetchNoteDataName(app);
+        const noteDataName = await this._fetchDataNoteName(app);
         const existingNote = await app.findNote({ name: noteDataName });
         if (existingNote) {
           this._dataNoteHandle = existingNote;
           return existingNote;
         }
-        const newNote = await app.createNote(noteDataName, this.constants.DEFAULT_NOTE_DATA_TAGS);
-        console.debug("newNote is", newNote);
+        const dataTagBase = await this._baseDataTag(app);
+        let dataNoteTag = await app.settings[this.constants.SETTING_KEY_DATA_TAG_APPLIED];
+        if (!dataNoteTag && dataTagBase) {
+          dataNoteTag = `${dataTagBase}/five-questions`;
+        }
+        const newNote = await app.createNote(noteDataName, dataNoteTag);
+        console.debug("new data note is", newNote, "with tag", dataNoteTag);
         this._dataNoteHandle = await app.findNote({ uuid: newNote.uuid });
         console.debug("this._dataNoteHandle is", this._dataNoteHandle);
         return this._dataNoteHandle;
       }
     },
     // --------------------------------------------------------------------------------------
-    async _fetchNoteDataName(app) {
+    async _fetchDataNoteName(app) {
       let noteDataName = await app.settings[this.constants.SETTING_KEY_NOTE_DATA];
       if (!noteDataName) {
         const result = await app.prompt(
           `Enter the name of the note in which you'd like to record a table with links to your Five Question entries (leave blank for the default of "${this.constants.DEFAULT_NOTE_DATA_NAME}")`,
           { inputs: [{ type: "text" }] }
         );
-        const noteName = result[0] || this.constants.DEFAULT_NOTE_DATA_NAME;
-        noteDataName = noteName;
+        noteDataName = result[0] || this.constants.DEFAULT_NOTE_DATA_NAME;
         await app.setSetting(this.constants.SETTING_KEY_NOTE_DATA, noteDataName);
       }
       return noteDataName;
+    },
+    // --------------------------------------------------------------------------------------
+    async _baseDataTag(app) {
+      for (const tagBaseCandidate of ["personal", "me", "business", "biz"]) {
+        const candidateNoteHandles = await app.filterNotes({ tag: tagBaseCandidate });
+        if (candidateNoteHandles.length) {
+          return tagBaseCandidate;
+        }
+      }
     },
     // --------------------------------------------------------------------------------------
     // Return all of the markdown within a section that begins with `sectionHeadingText`
