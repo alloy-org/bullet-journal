@@ -132,7 +132,7 @@
       const tagArray = await this._bulletJournalTagArray(app);
       let navigateUrl;
       if (tagArray?.length) {
-        navigateUrl = `https://www.amplenote.com/notes/jots?tag=${tagArray[tagArray.length - 1]}`;
+        navigateUrl = `https://www.amplenote.com/notes/${this._bulletNoteHandle.uuid}`;
         console.debug("Navigating to jot tag", navigateUrl);
       } else {
         navigateUrl = `https://www.amplenote.com/notes/${this._bulletNoteHandle.uuid}`;
