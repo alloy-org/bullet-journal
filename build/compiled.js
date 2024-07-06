@@ -79,7 +79,8 @@
           return note;
         }
       } else {
-        note = await app.createNote(findArgument.name, findArgument.tags);
+        const noteUUID = await app.createNote(findArgument.name, findArgument.tags);
+        note = await app.findNote({ uuid: noteUUID });
       }
       await note.insertContent(FIVE_QUESTION_MARKDOWN);
       return note;
