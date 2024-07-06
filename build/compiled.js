@@ -157,7 +157,7 @@
       tableMarkdown += `| **Daily Questions Note** | **Day Rating** | **Precipitating events** | **Captured at** |
 | --- | --- | --- | --- |
 `;
-      tableMarkdown += `| [${this._bulletNoteHandle.name}](/notes/${this._bulletNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleDateString()} |
+      tableMarkdown += `| [${this._bulletNoteHandle.name}](/notes/${this._bulletNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleString()} |
 `;
       tableMarkdown += existingTable;
       const dailyQuestionContent = await app.getNoteContent(this._bulletNoteHandle);
@@ -177,8 +177,10 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
       const content = await app.getNoteContent(await this._dataNote(app));
       let existingTable = "";
       if (content.includes(`# ${sectionName}`)) {
+        console.log("Table note content includes expected section name");
         existingTable = await this._sectionContent(content, sectionName);
         if (existingTable?.length) {
+          console.log("Data table note has existing table content length", existingTable.length);
           const tableRows = existingTable.split("\n");
           while (tableRows.length) {
             const row = tableRows.shift();
@@ -187,6 +189,8 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
             }
           }
           return tableRows.join("\n");
+        } else {
+          console.log("No table content found in section", sectionName);
         }
       }
     },
@@ -243,7 +247,6 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
     // `sectionHeadingText` Text of the section heading to grab, with or without preceding `#`s
     // `depth` Capture all content at this depth, e.g., if grabbing depth 2 of a second-level heading, this will return all potential h3s that occur up until the next h1 or h2
     _sectionContent(noteContent, headingTextOrSectionObject) {
-      console.debug(`_sectionContent()`);
       let sectionHeadingText;
       if (typeof headingTextOrSectionObject === "string") {
         sectionHeadingText = headingTextOrSectionObject;
@@ -264,7 +267,6 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
     // Return {startIndex, endIndex} where startIndex is the index at which the content of a section
     // starts, and endIndex the index at which it ends.
     _sectionRange(bodyContent, sectionHeadingText) {
-      console.debug(`_sectionRange`);
       const sectionRegex = /^#+\s*([^#\n\r]+)/gm;
       const indexes = Array.from(bodyContent.matchAll(sectionRegex));
       const sectionMatch = indexes.find((m) => m[1].trim() === sectionHeadingText.trim());
