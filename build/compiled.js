@@ -5,18 +5,17 @@
 2. 
 3. 
 
-
+###
 # What would make today great?
 1. 
 2. 
 3. 
 
-
+###
 # Daily affirmation
 * [ ] Some ideas from [TheGoodTrade](https://www.thegoodtrade.com/features/positive-affirmations-morning-routine/)
 
-
-
+###
 # Highlights of the day
 1. 
 2. 
@@ -24,9 +23,9 @@
 
 
 # What did I learn today?
+* 
 
-
-
+###
 `;
 
   // lib/plugin.js
@@ -95,14 +94,14 @@
     },
     // --------------------------------------------------------------------------------------
     async _queryRecordMoodLevel(app) {
-      const noteDataTableName = await this._fetchNoteDataName(app);
       const moodOptions = [-2, -1, 0, 1, 2].map((value) => ({ value, label: `${value}` }));
-      const result = await app.prompt("Today will be remembered as (optional)", { inputs: [
-        { label: "Frivolous/terrible (-2) to successful/wonderful (+2)", type: "radio", options: moodOptions },
-        { label: "Factors contributing to this rating?", type: "text" }
-      ] });
-      const dataNote = await this._fetchDataNote(app, { noteDataName: noteDataTableName });
-      await this._persistData(app, this._dailyQuestionNoteHandle, dataNote, this.constants.TABLE_SECTION_NAME, result);
+      const result = await app.prompt("Today will be remembered as (optional)", {
+        inputs: [
+          { label: "Frivolous/terrible (-2) to successful/wonderful (+2)", type: "radio", options: moodOptions, value: "0" },
+          { label: "Factors contributing to this rating?", type: "text" }
+        ]
+      });
+      await this._persistTableData(app, this.constants.TABLE_SECTION_NAME, result);
     },
     // --------------------------------------------------------------------------------------
     async _noteName(app) {
@@ -136,35 +135,41 @@
       await app.navigate(navigateUrl);
     },
     // --------------------------------------------------------------------------------------
-    async _persistData(app, dailyQuestionNote, dateTableNote, sectionName, userDayRatingResponse) {
-      let existingTable = await this._tableData(app, dateTableNote, sectionName);
-      if (!existingTable) {
-        await app.insertNoteContent(dateTableNote, `# ${sectionName}
+    async _persistTableData(app, sectionName, userDayRatingResponse) {
+      let existingTable = await this._tableData(app, sectionName);
+      if (existingTable) {
+        console.debug("Found existing data table content, length", existingTable.length);
+      } else {
+        console.log("No existing data table could be found. Creating data table section");
+        await app.insertNoteContent(this._dataNoteHandle, `# ${sectionName}
 `);
         existingTable = "";
       }
       const receivedDayRating = Array.isArray(userDayRatingResponse) && userDayRatingResponse[0].length;
+      console.debug("userDayRatingResponse was", userDayRatingResponse);
       let tableMarkdown = `# ${sectionName}
 `;
       tableMarkdown += `| **Daily Questions Note** | **Day Rating** | **Precipitating events** |
 | --- | --- | --- |
 `;
-      tableMarkdown += `| [[${dailyQuestionNote.name}]] | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} |
+      tableMarkdown += `| [[${this._dailyQuestionNoteHandle.name}]] | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} |
 `;
       tableMarkdown += existingTable;
-      const dailyQuestionContent = await app.getNoteContent(dailyQuestionNote);
+      const dailyQuestionContent = await app.getNoteContent(this._dailyQuestionNoteHandle);
       if (receivedDayRating && !dailyQuestionContent.includes("Day Rating")) {
-        await dailyQuestionContent.insertContent(
+        await app.insertNoteContent(
+          this._dailyQuestionNoteHandle,
           `# Day Rating
 Rating given: ${userDayRatingResponse[0] || "N/A"}
-${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRatingResponse[1]}` : ""}`
+${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
+          { atEnd: true }
         );
       }
-      await app.replaceNoteContent(dateTableNote, tableMarkdown, { heading: { text: sectionName, level: 2 } });
+      await app.replaceNoteContent(this._dataNoteHandle, tableMarkdown, { heading: { text: sectionName, level: 2 } });
     },
     // --------------------------------------------------------------------------------------
-    async _tableData(app, note, sectionName) {
-      const content = await app.getNoteContent(note);
+    async _tableData(app, sectionName) {
+      const content = await app.getNoteContent(this._dataNoteHandle);
       let existingTable = "";
       if (content.includes(`# ${sectionName}`)) {
         existingTable = await this._sectionContent(content, sectionName);
@@ -182,16 +187,16 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
     },
     // --------------------------------------------------------------------------------------
     async _fetchDataNote(app, { noteDataName = null } = {}) {
-      if (this._dateNoteHandle)
-        return this._dateNoteHandle;
+      if (this._dataNoteHandle)
+        return this._dataNoteHandle;
       noteDataName = noteDataName || await this._fetchNoteDataName(app);
       const existingNote = await app.findNote({ name: noteDataName });
       if (existingNote) {
-        this._dateNoteHandle = existingNote;
+        this._dataNoteHandle = existingNote;
         return existingNote;
       }
       const note = await app.createNote(noteDataName, this.constants.DEFAULT_NOTE_DATA_TAGS);
-      this._dateNoteHandle = note;
+      this._dataNoteHandle = note;
       return note;
     },
     // --------------------------------------------------------------------------------------
