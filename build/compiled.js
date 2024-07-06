@@ -98,10 +98,12 @@
     // --------------------------------------------------------------------------------------
     async _noteName(app) {
       const dateSetting = await app.settings[this.constants.SETTING_KEY_DATE_FORMAT];
+      const userLocale = navigator?.language || "en-US";
       if (dateSetting?.length) {
-        return `${(/* @__PURE__ */ new Date()).toLocaleString(dateSetting)} Five Questions`;
+        console.log("Using setting from user", dateSetting);
+        return `${(/* @__PURE__ */ new Date()).toLocaleDateString(userLocale, dateSetting)} Five Questions`;
       } else {
-        return `${(/* @__PURE__ */ new Date()).toLocaleString()} Five Questions`;
+        return `${(/* @__PURE__ */ new Date()).toLocaleDateString(userLocale, { year: "numeric", month: "long", day: "numeric" })} Five Questions`;
       }
     },
     // --------------------------------------------------------------------------------------
