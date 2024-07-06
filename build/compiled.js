@@ -154,7 +154,7 @@
       console.debug("userDayRatingResponse was", userDayRatingResponse);
       let tableMarkdown = `# ${sectionName}
 `;
-      tableMarkdown += `| **Daily Questions Note** | **Day Rating** | **Precipitating events** | **Captured at** |
+      tableMarkdown += `| **Bullet Journal Note** | **Day Rating** | **Precipitating events** | **Captured at** |
 | --- | --- | --- | --- |
 `;
       tableMarkdown += `| [${this._bulletNoteHandle.name}](/notes/${this._bulletNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleString()} |
@@ -173,6 +173,7 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
       await app.replaceNoteContent(await this._dataNote(app), tableMarkdown, { heading: { text: sectionName, level: 2 } });
     },
     // --------------------------------------------------------------------------------------
+    // Return a string of the contents of the bullet journal data table, absent its two header rows
     async _tableData(app, sectionName) {
       const content = await app.getNoteContent(await this._dataNote(app));
       let existingTable = "";
@@ -182,12 +183,13 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
         if (existingTable?.length) {
           console.log("Data table note has existing table content length", existingTable.length);
           const tableRows = existingTable.split("\n");
-          while (tableRows.length) {
-            const row = tableRows.shift();
-            if (row.includes("**Date**")) {
-              break;
-            }
+          if (tableRows[0]?.includes("Bullet Journal Note")) {
+            tableRows.shift();
           }
+          if (tableRows[0]?.includes("| --- |")) {
+            tableRows.shift();
+          }
+          console.debug("After removing header rows, table content length is", tableRows.join("\n").length);
           return tableRows.join("\n");
         } else {
           console.log("No table content found in section", sectionName);
