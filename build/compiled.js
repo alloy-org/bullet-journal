@@ -172,7 +172,9 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
           { atEnd: true }
         );
       }
-      await app.replaceNoteContent(await this._dataNote(app), tableMarkdown, { heading: { text: sectionName, level: 2 } });
+      const dataNote = await this._dataNote(app);
+      console.debug("Constructed", tableMarkdown, "markdown to replace data note section");
+      await app.replaceNoteContent(dataNote, tableMarkdown, { heading: { text: sectionName, level: 1 } });
     },
     // --------------------------------------------------------------------------------------
     // Return an array of the rows from the bullet journal data table (absent its two header rows), or undefined if
