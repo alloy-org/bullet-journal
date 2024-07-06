@@ -43,7 +43,7 @@
     // --------------------------------------------------------------------------
     // https://www.amplenote.com/help/developing_amplenote_plugins#dailyJotOption
     dailyJotOption: {
-      "Bullet journal": {
+      "Log Daily Entry": {
         async run(app) {
           await this._ensureBulletJournalNote(app);
           await this._visitBulletJournalNote(app);
@@ -60,7 +60,7 @@
     },
     // --------------------------------------------------------------------------------------
     appOption: {
-      "Capture bullet journal entry": async function(app) {
+      "Log daily entry": async function(app) {
         await this._ensureBulletJournalNote(app);
         await this._visitBulletJournalNote(app);
         await this._queryRecordMoodLevel(app);
