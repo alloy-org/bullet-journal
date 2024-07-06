@@ -181,6 +181,9 @@
           );
         }
       }
+      const dataNote = await this._dataNote(app);
+      console.debug("Constructed", tableMarkdown, "markdown as table data to replace");
+      await app.replaceNoteContent(dataNote, tableMarkdown, { heading: { text: sectionName } });
     },
     // --------------------------------------------------------------------------------------
     // Return an array of the rows from the bullet journal data table (absent its two header rows), or undefined if
