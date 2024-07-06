@@ -1,4 +1,4 @@
-# Tim Ferriss-inspired (NOT endorsed) daily prompts
+# Five Question Journal - Daily Prompts Inspired by Tim Ferriss
 
 As a [Five Bullet Friday subscriber](https://go.tim.blog/5-bullet-friday-1/), I've often been directed to Tim's Twitter/X
 page, which in June 2024 posted a video with example questions in a bullet journal:
