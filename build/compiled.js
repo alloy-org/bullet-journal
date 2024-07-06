@@ -73,6 +73,7 @@
       const tagsApplied = await this._bulletJournalTagArray(app);
       console.debug("Received bullet journal tag array", tagsApplied);
       if (tagsApplied.length) {
+        findArgument = { ...findArgument, tags: tagsApplied };
       }
       let note = await app.findNote(findArgument);
       if (note) {
@@ -118,10 +119,10 @@
       if (tagSetting?.length) {
         return tagSetting.split(",").map((tag) => tag.trim()).filter((n) => n);
       } else {
-        let bulletJournalNoteTags = [this.constants.DEFAULT_QUESTION_NOTE_TAGS];
+        let bulletJournalNoteTags = this.constants.DEFAULT_QUESTION_NOTE_TAGS;
         const baseTag = await this._baseDataTag(app);
         if (baseTag) {
-          bulletJournalNoteTags.concat(`${baseTag}/bullet-journal`);
+          bulletJournalNoteTags.push(`${baseTag}/bullet-journal`);
         }
         return bulletJournalNoteTags;
       }
