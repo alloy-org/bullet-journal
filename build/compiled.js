@@ -50,11 +50,11 @@
           await this._queryRecordMoodLevel(app);
         },
         async check(app) {
-          const tableMarkdown = await this._tableData(app, this.constants.TABLE_SECTION_NAME);
-          if (!tableMarkdown)
+          const tableDataRows = await this._tableDataRows(app, this.constants.TABLE_SECTION_NAME);
+          if (!tableDataRows)
             return true;
           const todayString = (/* @__PURE__ */ new Date()).toLocaleDateString();
-          return !tableMarkdown.includes(todayString);
+          return !tableDataRows.find((row) => row.includes(todayString));
         }
       }
     },
@@ -141,9 +141,11 @@
     },
     // --------------------------------------------------------------------------------------
     async _persistTableData(app, sectionName, userDayRatingResponse) {
-      let existingTable = await this._tableData(app, sectionName);
-      if (existingTable) {
-        console.debug("Found existing data table content, length", existingTable.length);
+      const existingTableRows = await this._tableDataRows(app, sectionName);
+      let existingTable;
+      if (existingTableRows) {
+        console.debug(`Found ${existingTableRows.length} existing data table rows to preserve`);
+        existingTable = existingTableRows.join("\n");
       } else {
         console.log("No existing data table could be found. Creating data table section");
         await app.insertNoteContent(await this._dataNote(app), `# ${sectionName}
@@ -173,8 +175,9 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
       await app.replaceNoteContent(await this._dataNote(app), tableMarkdown, { heading: { text: sectionName, level: 2 } });
     },
     // --------------------------------------------------------------------------------------
-    // Return a string of the contents of the bullet journal data table, absent its two header rows
-    async _tableData(app, sectionName) {
+    // Return an array of the rows from the bullet journal data table (absent its two header rows), or undefined if
+    // it doesn't exist
+    async _tableDataRows(app, sectionName) {
       const content = await app.getNoteContent(await this._dataNote(app));
       let existingTable = "";
       if (content.includes(`# ${sectionName}`)) {
@@ -183,14 +186,16 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
         if (existingTable?.length) {
           console.log("Data table note has existing table content length", existingTable.length);
           const tableRows = existingTable.split("\n");
-          if (tableRows[0]?.includes("Bullet Journal Note")) {
-            tableRows.shift();
-          }
-          if (tableRows[0]?.includes("| --- |")) {
-            tableRows.shift();
+          while (tableRows.length) {
+            const row = tableRows.shift();
+            if (row.includes("Bullet Journal]")) {
+              break;
+            } else {
+              console.log("Discarding table row", row);
+            }
           }
           console.debug("After removing header rows, table content length is", tableRows.join("\n").length);
-          return tableRows.join("\n");
+          return tableRows;
         } else {
           console.log("No table content found in section", sectionName);
         }
