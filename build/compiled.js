@@ -74,7 +74,7 @@
       let note = await app.findNote(findArgument);
       if (note) {
         const firstLine = FIVE_QUESTION_MARKDOWN.split("\n")[0];
-        const content = await note.content();
+        const content = await app.getNoteContent(note);
         if (content?.includes(firstLine)) {
           return note;
         }
@@ -144,7 +144,7 @@
       tableMarkdown += `| [[${dailyQuestionNote.name}]] | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} |
 `;
       tableMarkdown += existingTable;
-      const dailyQuestionContent = await dailyQuestionNote.content();
+      const dailyQuestionContent = await app.getNoteContent(dailyQuestionNote);
       if (receivedDayRating && !dailyQuestionContent.includes("Day Rating")) {
         await dailyQuestionContent.insertContent(
           `# Day Rating
@@ -174,16 +174,16 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
     },
     // --------------------------------------------------------------------------------------
     async _fetchDataNote(app, { noteDataName = null } = {}) {
-      if (this._noteHandle)
-        return this._noteHandle;
+      if (this._dateNoteHandle)
+        return this._dateNoteHandle;
       noteDataName = noteDataName || await this._fetchNoteDataName(app);
       const existingNote = await app.findNote({ name: noteDataName });
       if (existingNote) {
-        this._noteHandle = existingNote;
+        this._dateNoteHandle = existingNote;
         return existingNote;
       }
       const note = await app.createNote(noteDataName, this.constants.DEFAULT_NOTE_DATA_TAGS);
-      this._noteHandle = note;
+      this._dateNoteHandle = note;
       return note;
     },
     // --------------------------------------------------------------------------------------
