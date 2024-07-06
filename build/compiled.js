@@ -73,7 +73,6 @@
       const tagsApplied = await this._bulletJournalTagArray(app);
       console.debug("Received bullet journal tag array", tagsApplied);
       if (tagsApplied.length) {
-        findArgument = { ...findArgument, tags: tagsApplied };
       }
       let note = await app.findNote(findArgument);
       if (note) {
