@@ -161,25 +161,14 @@
       tableMarkdown += existingTable;
       if (receivedDayRating) {
         const existingJournalContent = await app.getNoteContent(this._bulletNoteHandle);
-        if (existingJournalContent?.includes("# Day Rating")) {
-          const sectionContent = this._sectionContent(existingJournalContent, "Day Rating");
-          console.debug("Appending to existing journal day rating content", sectionContent);
-          await app.replaceNoteContent(
-            this._bulletNoteHandle,
-            `${sectionContent}
-- Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString(navigator.language, { second: false })}: ${userDayRatingResponse[0]}${userDayRatingResponse[1]?.length ? `
-    - Precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
-            { heading: { text: "Day Rating" } }
-          );
-        } else {
-          await app.insertNoteContent(
-            this._bulletNoteHandle,
-            `# Day Rating
-* Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString(navigator.language, { second: false })}: ${userDayRatingResponse[0] || "N/A"}${userDayRatingResponse[1]?.length ? `
-    - Precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
-            { atEnd: true }
-          );
+        let insertContent = `* Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString(navigator.language, { second: false })}:${userDayRatingResponse[0] || "N/A"}${userDayRatingResponse[1]?.length ? `
+    - Precipitating factors: ${userDayRatingResponse[1]}` : ""}`;
+        if (!existingJournalContent?.includes("# Day Rating")) {
+          insertContent = `
+# Day Rating
+${insertContent}`;
         }
+        await app.insertNoteContent(this._bulletNoteHandle, insertContent, { atEnd: true });
       }
       const dataNote = await this._dataNote(app);
       console.debug("Constructed", tableMarkdown, "markdown as table data to replace");
