@@ -14,6 +14,10 @@ that will insert the provocative questions from the journal shown in the video:
 4. Highlights of the day (3 responses)
 5. What did I learn today?
 
+This plugin adds one more question:
+
+6. Today shall be remembered as: frivolous/tortuous (-2) or successful/wonderful (+2)?  
+
 Your responses to these questions will be tagged with a hierarchy of your choosing (e.g., `daily-jots/five-questions` or `personal/daily-data`). 
 
-A table will also be created with links to all your daily entries, for convenient perusal.
+A note containing a table of your data will also be created, with links to your daily entries.
