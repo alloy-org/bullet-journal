@@ -156,7 +156,7 @@
       tableMarkdown += `| **Bullet Journal Note** | **Day Rating** | **Precipitating events** | **Captured at** |
 | --- | --- | --- | --- |
 `;
-      tableMarkdown += `| [${this._bulletNoteHandle.name}](/notes/${this._bulletNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleString()} |
+      tableMarkdown += `| [${this._bulletNoteHandle.name}](/notes/${this._bulletNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1].replace(/\n/g, "\\") : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleString()} |
 `;
       tableMarkdown += existingTable;
       if (receivedDayRating) {
@@ -167,23 +167,20 @@
           await app.replaceNoteContent(
             this._bulletNoteHandle,
             `${sectionContent}
-* Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}: ${userDayRatingResponse[0]}${userDayRatingResponse[1]?.length ? `
-  * Precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
-            { heading: { text: "Day Rating", level: 1 } }
+- Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}: ${userDayRatingResponse[0]}${userDayRatingResponse[1]?.length ? `
+    - Precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
+            { heading: { text: "Day Rating" } }
           );
         } else {
           await app.insertNoteContent(
             this._bulletNoteHandle,
             `# Day Rating
 * Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}: ${userDayRatingResponse[0] || "N/A"}${userDayRatingResponse[1]?.length ? `
-  * Precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
+    - Precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
             { atEnd: true }
           );
         }
       }
-      const dataNote = await this._dataNote(app);
-      console.debug("Constructed", tableMarkdown, "markdown to replace data note section");
-      await app.replaceNoteContent(dataNote, tableMarkdown, { heading: { text: sectionName, level: 1 } });
     },
     // --------------------------------------------------------------------------------------
     // Return an array of the rows from the bullet journal data table (absent its two header rows), or undefined if
@@ -228,9 +225,9 @@
         if (!dataNoteTag && dataTagBase) {
           dataNoteTag = [`${dataTagBase}/five-questions`];
         }
-        let newNote = await app.createNote(noteDataName, dataNoteTag || []);
-        console.debug("new data note is", newNote, "with tag", dataNoteTag);
-        this._dataNoteHandle = await app.findNote({ uuid: newNote.uuid });
+        const uuid = await app.createNote(noteDataName, dataNoteTag || []);
+        console.debug("New data note uuid is", uuid, "with tag", dataNoteTag);
+        this._dataNoteHandle = await app.findNote({ uuid });
         console.debug("this._dataNoteHandle is", this._dataNoteHandle);
         return this._dataNoteHandle;
       }
