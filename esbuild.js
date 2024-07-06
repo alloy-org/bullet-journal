@@ -1,7 +1,4 @@
-import dotenv from "dotenv"
 import esbuild from "esbuild"
-
-dotenv.config();
 
 const result = await esbuild.build({
   entryPoints: [`lib/plugin.js`],
