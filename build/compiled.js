@@ -156,12 +156,12 @@
       tableMarkdown += `| **Bullet Journal Note** | **Day Rating** | **Precipitating events** | **Captured at** |
 | --- | --- | --- | --- |
 `;
-      tableMarkdown += `| [${this._bulletNoteHandle.name}](/notes/${this._bulletNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1].replace(/\n/g, "\\") : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleString(navigator.language, { second: false })} |
+      tableMarkdown += `| [${this._bulletNoteHandle.name}](/notes/${this._bulletNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1].replace(/\n/g, "\\") : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleString()} |
 `;
       tableMarkdown += existingTable;
       if (receivedDayRating) {
         const existingJournalContent = await app.getNoteContent(this._bulletNoteHandle);
-        let insertContent = `* Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString(navigator.language, { second: false })}:${userDayRatingResponse[0] || "N/A"}${userDayRatingResponse[1]?.length ? `
+        let insertContent = `- Rating as of ${(/* @__PURE__ */ new Date()).toLocaleTimeString(navigator.language, { hour: "2-digit", minute: "2-digit", hour12: true })}: ${userDayRatingResponse[0] || "N/A"}${userDayRatingResponse[1]?.length ? `
     - Precipitating factors: ${userDayRatingResponse[1]}` : ""}`;
         if (!existingJournalContent?.includes("# Day Rating")) {
           insertContent = `
@@ -171,7 +171,6 @@ ${insertContent}`;
         await app.insertNoteContent(this._bulletNoteHandle, insertContent, { atEnd: true });
       }
       const dataNote = await this._dataNote(app);
-      console.debug("Constructed", tableMarkdown, "markdown as table data to replace");
       await app.replaceNoteContent(dataNote, tableMarkdown, { heading: { text: sectionName } });
     },
     // --------------------------------------------------------------------------------------
