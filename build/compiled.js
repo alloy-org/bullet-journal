@@ -71,7 +71,6 @@
       const noteName = await this._noteName(app);
       let findArgument = { name: noteName };
       const tagsApplied = await this._bulletJournalTagArray(app);
-      console.debug("Received bullet journal tag array", tagsApplied);
       if (tagsApplied.length) {
         findArgument = { ...findArgument, tags: tagsApplied };
       }
@@ -120,7 +119,7 @@
         return tagSetting.split(",").map((tag) => tag.trim()).filter((n) => n);
       } else {
         let bulletJournalNoteTags = this.constants.DEFAULT_QUESTION_NOTE_TAGS;
-        const baseTag = await this._baseDataTag(app);
+        const baseTag = await this._rootDataTag(app);
         if (baseTag) {
           bulletJournalNoteTags.push(`${baseTag}/bullet-journal`);
         }
@@ -133,7 +132,6 @@
       let navigateUrl;
       if (tagArray?.length) {
         navigateUrl = `https://www.amplenote.com/notes/${this._bulletNoteHandle.uuid}`;
-        console.debug("Navigating to jot tag", navigateUrl);
       } else {
         navigateUrl = `https://www.amplenote.com/notes/${this._bulletNoteHandle.uuid}`;
       }
@@ -153,7 +151,6 @@
         existingTable = "";
       }
       const receivedDayRating = Array.isArray(userDayRatingResponse) && userDayRatingResponse[0].length;
-      console.debug("userDayRatingResponse was", userDayRatingResponse);
       let tableMarkdown = `# ${sectionName}
 `;
       tableMarkdown += `| **Bullet Journal Note** | **Day Rating** | **Precipitating events** | **Captured at** |
@@ -162,15 +159,27 @@
       tableMarkdown += `| [${this._bulletNoteHandle.name}](/notes/${this._bulletNoteHandle.uuid}) | ${receivedDayRating ? userDayRatingResponse[0] : "See note"} | ${receivedDayRating ? userDayRatingResponse[1] : "See note"} | ${(/* @__PURE__ */ new Date()).toLocaleString()} |
 `;
       tableMarkdown += existingTable;
-      const dailyQuestionContent = await app.getNoteContent(this._bulletNoteHandle);
-      if (receivedDayRating && !dailyQuestionContent.includes("Day Rating")) {
-        await app.insertNoteContent(
-          this._bulletNoteHandle,
-          `# Day Rating
-Rating given: ${userDayRatingResponse[0] || "N/A"}
-${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
-          { atEnd: true }
-        );
+      if (receivedDayRating) {
+        const existingJournalContent = await app.getNoteContent(this._bulletNoteHandle);
+        if (existingJournalContent?.includes("# Day Rating")) {
+          const sectionContent = this._sectionContent(existingJournalContent, "Day Rating");
+          console.debug("Appending to existing journal day rating content", sectionContent);
+          await app.replaceNoteContent(
+            this._bulletNoteHandle,
+            `${sectionContent}
+* Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}: ${userDayRatingResponse[0]}${userDayRatingResponse[1]?.length ? `
+  * Precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
+            { heading: { text: "Day Rating", level: 1 } }
+          );
+        } else {
+          await app.insertNoteContent(
+            this._bulletNoteHandle,
+            `# Day Rating
+* Rating given at ${(/* @__PURE__ */ new Date()).toLocaleTimeString()}: ${userDayRatingResponse[0] || "N/A"}${userDayRatingResponse[1]?.length ? `
+  * Precipitating factors: ${userDayRatingResponse[1]}` : ""}`,
+            { atEnd: true }
+          );
+        }
       }
       const dataNote = await this._dataNote(app);
       console.debug("Constructed", tableMarkdown, "markdown to replace data note section");
@@ -180,23 +189,22 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
     // Return an array of the rows from the bullet journal data table (absent its two header rows), or undefined if
     // it doesn't exist
     async _tableDataRows(app, sectionName) {
-      const content = await app.getNoteContent(await this._dataNote(app));
+      const dataNote = await this._dataNote(app);
+      const content = await app.getNoteContent(dataNote);
       let existingTable = "";
       if (content.includes(`# ${sectionName}`)) {
         console.log("Table note content includes expected section name");
         existingTable = await this._sectionContent(content, sectionName);
         if (existingTable?.length) {
-          console.log("Data table note has existing table content length", existingTable.length);
+          console.log(`Data table note (${dataNote.name}) has existing table content length`, existingTable.length);
           const tableRows = existingTable.split("\n");
           while (tableRows.length) {
             if (tableRows[0].includes("Bullet Journal]")) {
               break;
             } else {
               const row = tableRows.shift();
-              console.log("Discarding table row", row);
             }
           }
-          console.debug("After removing header rows, table content length is", tableRows.join("\n").length);
           return tableRows;
         } else {
           console.log("No table content found in section", sectionName);
@@ -204,17 +212,18 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
       }
     },
     // --------------------------------------------------------------------------------------
+    // Return a handle to the note data note, creating it with user-specified tags if it doesn't yet exist
     async _dataNote(app) {
       if (this._dataNoteHandle) {
         return this._dataNoteHandle;
       } else {
-        const noteDataName = await this._fetchDataNoteName(app);
+        const noteDataName = await this._dataNoteName(app);
         const existingNote = await app.findNote({ name: noteDataName });
         if (existingNote) {
           this._dataNoteHandle = existingNote;
           return existingNote;
         }
-        const dataTagBase = await this._baseDataTag(app);
+        const dataTagBase = await this._rootDataTag(app);
         let dataNoteTag = await app.settings[this.constants.SETTING_KEY_DATA_TAG_APPLIED];
         if (!dataNoteTag && dataTagBase) {
           dataNoteTag = [`${dataTagBase}/five-questions`];
@@ -227,7 +236,7 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
       }
     },
     // --------------------------------------------------------------------------------------
-    async _fetchDataNoteName(app) {
+    async _dataNoteName(app) {
       let noteDataName = await app.settings[this.constants.SETTING_KEY_NOTE_DATA];
       if (!noteDataName) {
         const result = await app.prompt(
@@ -240,7 +249,9 @@ ${userDayRatingResponse[1]?.length ? `Rating precipitating factors: ${userDayRat
       return noteDataName;
     },
     // --------------------------------------------------------------------------------------
-    async _baseDataTag(app) {
+    // Return the base hierarchy tag in which to record bullet journal entries, based on attempt to find a tag
+    // that is already in use by the user
+    async _rootDataTag(app) {
       for (const tagBaseCandidate of ["personal", "me", "business", "biz"]) {
         const candidateNoteHandles = await app.filterNotes({ tag: tagBaseCandidate });
         if (candidateNoteHandles.length) {
