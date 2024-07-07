@@ -1,6 +1,5 @@
 (() => {
   // lib/constants/misc.js
-
   var NOTE_OPTION_NAME = "Log Bullet Journal Entry";
 
   // lib/constants/note-names.js
@@ -109,7 +108,7 @@
         if (note) {
           console.debug(`Populated noteHandle`, backlinkNoteLabel, "with note", note);
           this._backlinkNoteUuidFromLabel[backlinkNoteLabel] = note.uuid;
-          return;
+          continue;
         }
         console.debug("No existing note exists for", backlinkNoteLabel, "Creating one.");
         const rootTag = await this._rootDataTag(app);
@@ -122,7 +121,7 @@
         console.log("Persisted backlink note", persistedNote);
         this._backlinkNoteUuidFromLabel[backlinkNoteLabel] = persistedNote.uuid;
         await app.insertNoteContent(
-          this._backlinkNoteUuidFromLabel[backlinkNoteLabel],
+          persistedNote,
           `Periodically browse the "Backlinks" tab, and summarize any repeating patterns that you see:
 
 \\
@@ -162,9 +161,10 @@
         const backlinkNoteUuid = this._backlinkNoteUuidFromLabel[backlinkNoteLabel];
         console.debug("backlinkNoteUuid", backlinkNoteUuid, "for label", backlinkNoteLabel);
         if (backlinkNoteUuid) {
-          journalContent = journalContent.replace(`${backlinkNoteLabel}_link`, `/notes/${backlinkNoteUuid}`);
+          journalContent = journalContent.replace(`${backlinkNoteLabel}_link`, `https://www.amplenote.com/notes/${backlinkNoteUuid}`);
         } else {
-          const titleRegex = new RegExp(`/\\[([\\w\\s]+)\\]\\(${backlinkNoteLabel}_link\\)`);
+          const titleRegex = new RegExp(`\\[([\\w\\s.?]+)\\]\\(${backlinkNoteLabel}_link\\)`);
+          console.log("TitleRegex match", titleRegex.match(journalContent), "given journalContent", journalContent);
           journalContent = journalContent.replace(titleRegex, "$1");
         }
       }
