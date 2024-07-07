@@ -1,7 +1,8 @@
-# Five Question Journal - Daily Prompts Inspired by Tim Ferriss
+# Five Minute Bullet Journal
+A plugin template creator that inserts 5 daily prompts inspired by the great Tim Ferriss.
 
 As a [Five Bullet Friday subscriber](https://go.tim.blog/5-bullet-friday-1/), I've often been directed to Tim's Twitter/X
-page, which in June 2024 posted a video with example questions in a bullet journal:
+page, which in 2024 posted a video with example questions in a bullet journal:
 
 [Tim Ferriss showing a five bullet journal](https://twitter.com/tferriss/status/1808838290008588460)
 
@@ -21,3 +22,5 @@ This plugin adds one more question:
 Your responses to these questions will be tagged with a hierarchy of your choosing (e.g., `daily-jots/five-questions` or `personal/daily-data`). 
 
 A note containing a table of your data will also be created, with links to your daily entries.
+
+[The plugin can be installed free from the plugin directory](https://www.amplenote.com/plugins/aaEcia9F4yr56ro3pvZ52hjg).
