@@ -19,10 +19,9 @@
   var SETTING_KEY_LEARNING_NOTE = `Name of note that "What I Learned" heading links to (default "${DEFAULT_NOTE_NAME_LEARNING}")`;
 
   // lib/five-question-markdown.js
-  var FIVE_QUESTION_MARKDOWN = `Try to complete this self-calibration in around 5 minutes if possible. 
-The less time is spent on it, the greater the chances you can remain consistent with this prospective habit.
-
-
+  var FIVE_QUESTION_MARKDOWN = `Try to complete this self-calibration in around 5 minutes if possible. The less time is spent on it, the greater the chances you can remain consistent with this prospective habit.
+ 
+ 
 # [I am grateful for...](gratitude_link)
 1.  
 2. 
@@ -97,15 +96,18 @@ The less time is spent on it, the greater the chances you can remain consistent 
         [SETTING_KEY_HIGHLIGHTS_NOTE, DEFAULT_NOTE_NAME_HIGHLIGHTS, "highlights"],
         [SETTING_KEY_LEARNING_NOTE, DEFAULT_NOTE_NAME_LEARNING, "learning"]
       ];
-      for (const [settingKey, defaultValue, backlinkNoteLabel] of backlinkSets) {
-        const noteName = await app.settings[settingKey] || defaultValue;
+      for (const [settingKey, defaultNoteName, backlinkNoteLabel] of backlinkSets) {
+        const settingNoteName = await app.settings[settingKey];
+        const noteName = settingNoteName?.length ? settingNoteName : defaultNoteName;
         if (noteName === "none")
           continue;
         const note = await app.findNote({ name: noteName });
         if (note) {
           console.debug(`Populated noteHandle`, backlinkNoteLabel, "with note", note);
           this._backlinkNoteUuidFromLabel[backlinkNoteLabel] = note.uuid;
+          return;
         }
+        console.debug("No existing note exists for", backlinkNoteLabel, "Creating one.");
         const rootTag = await this._rootDataTag(app);
         let noteTag;
         if (rootTag) {
@@ -113,6 +115,7 @@ The less time is spent on it, the greater the chances you can remain consistent 
         }
         const noteUUID = await app.createNote(noteName, noteTag ? [noteTag] : []);
         const persistedNote = await app.findNote({ uuid: noteUUID });
+        console.log("Persisted backlink note", persistedNote);
         this._backlinkNoteUuidFromLabel[backlinkNoteLabel] = persistedNote.uuid;
         await app.insertNoteContent(
           this._backlinkNoteUuidFromLabel[backlinkNoteLabel],
