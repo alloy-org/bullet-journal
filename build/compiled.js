@@ -1,6 +1,6 @@
 (() => {
   // lib/five-question-markdown.js
-  var FIVE_QUESTION_MARKDOWN = `# I am grateful for...
+  var FIVE_QUESTION_MARKDOWN = `# [I am grateful for...](gratitude_link)
 1.  
 2. 
 3. 
@@ -16,41 +16,44 @@
 * [ ] Some ideas from [TheGoodTrade](https://www.thegoodtrade.com/features/positive-affirmations-morning-routine/)
 
 ###
-# Highlights of the day
+# [Highlights of the day](highlights_link)
 1. 
 2. 
 3. 
 
 ###
-# What did I learn today?
+# [What did I learn today?](learning_link)
 * 
 
 ###
 `;
 
   // lib/plugin.js
+  var DEFAULT_NOTE_NAME_DATA = "Bullet Journal Data";
+  var DEFAULT_NOTE_NAME_GRATITUDE = `Themes of "Gratitude" from five-minute bullet journal`;
+  var DEFAULT_NOTE_NAME_HIGHLIGHTS = `Themes of "Daily Highlights" from five-minute bullet journal`;
+  var DEFAULT_NOTE_NAME_LEARNING = `Themes of "Learning" from five-minute bullet journal`;
+  var DEFAULT_QUESTION_NOTE_TAGS = ["daily-jots/bullet-journal"];
+  var TABLE_SECTION_NAME = `"Bullet Journal" Entries`;
+  var TAG_SUFFIX = "bullet-journal";
+  var SETTING_KEY_NOTE_DATA = "Name of note where table is recorded";
+  var SETTING_KEY_DATE_FORMAT = "Date format, see plugin documentation";
+  var SETTING_KEY_TAG_APPLIED = `Tag(s) to apply to daily Daily Bullet entries (default "${DEFAULT_QUESTION_NOTE_TAGS[0]}")`;
+  var SETTING_KEY_DATA_TAG_APPLIED = "Tag to apply to data note";
+  var SETTING_KEY_GRATITUDE_NOTE = `Name of note that "What I Learned" heading links to (default "${DEFAULT_NOTE_NAME_GRATITUDE}")`;
+  var SETTING_KEY_HIGHLIGHTS_NOTE = `Name of note that "What I Learned" heading links to (default "${DEFAULT_NOTE_NAME_HIGHLIGHTS}")`;
+  var SETTING_KEY_LEARNING_NOTE = `Name of note that "What I Learned" heading links to (default "${DEFAULT_NOTE_NAME_LEARNING}")`;
   var plugin = {
-    // --------------------------------------------------------------------------------------
-    constants: {
-      DEFAULT_NOTE_DATA_NAME: "Bullet Journal Data",
-      DEFAULT_QUESTION_NOTE_TAGS: ["daily-jots/bullet-journal"],
-      TABLE_SECTION_NAME: `"Bullet Journal" Entries`,
-      SETTING_KEY_NOTE_DATA: "Name of note where table is recorded",
-      SETTING_KEY_DATE_FORMAT: "Date format, see plugin documentation",
-      SETTING_KEY_TAG_APPLIED: "Tag(s) to apply to daily Daily Bullet entries (default 'daily-jots/bullet-journal')",
-      SETTING_KEY_DATA_TAG_APPLIED: "Tag to apply to data note"
-    },
+    _backlinkNoteHandles: {},
     // --------------------------------------------------------------------------
     // https://www.amplenote.com/help/developing_amplenote_plugins#dailyJotOption
     dailyJotOption: {
       "Log Daily Entry": {
         async run(app) {
-          await this._ensureBulletJournalNote(app);
-          await this._visitBulletJournalNote(app);
-          await this._queryRecordMoodLevel(app);
+          await this._logDailyEntry(app);
         },
         async check(app) {
-          const tableDataRows = await this._tableDataRows(app, this.constants.TABLE_SECTION_NAME);
+          const tableDataRows = await this._tableDataRows(app, TABLE_SECTION_NAME);
           if (!tableDataRows)
             return true;
           const todayString = (/* @__PURE__ */ new Date()).toLocaleDateString();
@@ -61,9 +64,43 @@
     // --------------------------------------------------------------------------------------
     appOption: {
       "Log daily entry": async function(app) {
-        await this._ensureBulletJournalNote(app);
-        await this._visitBulletJournalNote(app);
-        await this._queryRecordMoodLevel(app);
+        await this._logDailyEntry(app);
+      }
+    },
+    // --------------------------------------------------------------------------------------
+    async _logDailyEntry(app) {
+      await this._ensureBacklinkNotes(app);
+      await this._ensureBulletJournalNote(app);
+      await this._visitBulletJournalNote(app);
+      await this._queryRecordMoodLevel(app);
+    },
+    // --------------------------------------------------------------------------------------
+    // The bullet journal headings link to separate notes, so backlinks can be perused to extract themes that
+    // can be analyzed/summarized in the backlink-holding note
+    async _ensureBacklinkNotes(app) {
+      const backlinkSets = [
+        [SETTING_KEY_GRATITUDE_NOTE, DEFAULT_NOTE_NAME_GRATITUDE, "gratitude"],
+        [SETTING_KEY_HIGHLIGHTS_NOTE, DEFAULT_NOTE_NAME_HIGHLIGHTS, "highlights"],
+        [SETTING_KEY_LEARNING_NOTE, DEFAULT_NOTE_NAME_LEARNING, "learning"]
+      ];
+      for (const [settingKey, defaultValue, noteHandle] of backlinkSets) {
+        const noteName = await app.settings[settingKey] || defaultValue;
+        const note = await app.findNote({ name: noteName });
+        if (note) {
+          this._backlinkNoteHandles[noteHandle] = note;
+        }
+        const rootTag = await this._rootDataTag(app);
+        let noteTag;
+        if (rootTag) {
+          noteTag = `${rootTag}/${TAG_SUFFIX}`;
+        }
+        const noteUUID = await app.createNote(noteName, noteTag ? [noteTag] : []);
+        this._backlinkNoteHandles[noteHandle] = await app.findNote({ uuid: noteUUID });
+        await app.insertNoteContent(this._backlinkNoteHandles[noteHandle], `Periodically browse the "Backlinks" tab, and summarize any repeating patterns that you see:
+
+\\
+
+`);
       }
     },
     // --------------------------------------------------------------------------------------
@@ -87,7 +124,17 @@
         const noteUUID = await app.createNote(findArgument.name, findArgument.tags || []);
         note = await app.findNote({ uuid: noteUUID });
       }
-      await app.insertNoteContent({ uuid: note.uuid }, FIVE_QUESTION_MARKDOWN);
+      let journalContent = FIVE_QUESTION_MARKDOWN;
+      for (const noteHandle of ["gratitude", "highlights", "learning"]) {
+        const backlinkNoteHandle = this._backlinkNoteHandles[noteHandle];
+        if (backlinkNoteHandle) {
+          journalContent = journalContent.replace(`${noteHandle}_link`, `/notes/${backlinkNoteHandle.uuid}`);
+        } else {
+          const titleRegex = new RegExp(`/\\[([\\w\\s]+)\\]\\(${noteHandle}_link\\)`);
+          journalContent = journalContent.replace(titleRegex, "$1");
+        }
+      }
+      await app.insertNoteContent({ uuid: note.uuid }, journalContent);
       this._bulletNoteHandle = note;
     },
     // --------------------------------------------------------------------------------------
@@ -99,11 +146,11 @@
           { label: "Factors contributing to this rating?", type: "text" }
         ]
       });
-      await this._persistTableData(app, this.constants.TABLE_SECTION_NAME, result);
+      await this._persistTableData(app, TABLE_SECTION_NAME, result);
     },
     // --------------------------------------------------------------------------------------
     async _noteName(app) {
-      const dateSetting = await app.settings[this.constants.SETTING_KEY_DATE_FORMAT];
+      const dateSetting = await app.settings[SETTING_KEY_DATE_FORMAT];
       const userLocale = navigator?.language || "en-US";
       if (dateSetting?.length) {
         console.log("Using setting from user", dateSetting);
@@ -114,14 +161,14 @@
     },
     // --------------------------------------------------------------------------------------
     async _bulletJournalTagArray(app) {
-      const tagSetting = await app.settings[this.constants.SETTING_KEY_TAG_APPLIED];
+      const tagSetting = await app.settings[SETTING_KEY_TAG_APPLIED];
       if (tagSetting?.length) {
         return tagSetting.split(",").map((tag) => tag.trim()).filter((n) => n);
       } else {
-        let bulletJournalNoteTags = this.constants.DEFAULT_QUESTION_NOTE_TAGS;
+        let bulletJournalNoteTags = DEFAULT_QUESTION_NOTE_TAGS;
         const baseTag = await this._rootDataTag(app);
         if (baseTag) {
-          bulletJournalNoteTags.push(`${baseTag}/bullet-journal`);
+          bulletJournalNoteTags.push(`${baseTag}/${TAG_SUFFIX}`);
         }
         return bulletJournalNoteTags;
       }
@@ -226,7 +273,7 @@ ${insertContent}`;
           return existingNote;
         }
         const dataTagBase = await this._rootDataTag(app);
-        let dataNoteTag = await app.settings[this.constants.SETTING_KEY_DATA_TAG_APPLIED];
+        let dataNoteTag = await app.settings[SETTING_KEY_DATA_TAG_APPLIED];
         if (!dataNoteTag && dataTagBase) {
           dataNoteTag = [`${dataTagBase}/five-questions`];
         }
@@ -239,14 +286,14 @@ ${insertContent}`;
     },
     // --------------------------------------------------------------------------------------
     async _dataNoteName(app) {
-      let noteDataName = await app.settings[this.constants.SETTING_KEY_NOTE_DATA];
+      let noteDataName = await app.settings[SETTING_KEY_NOTE_DATA];
       if (!noteDataName) {
         const result = await app.prompt(
-          `Enter the name of the note in which you'd like to record a table with links to your Bullet Journal entries (leave blank for the default of "${this.constants.DEFAULT_NOTE_DATA_NAME}")`,
+          `Enter the name of the note in which you'd like to record a table with links to your Bullet Journal entries (leave blank for the default of "${DEFAULT_NOTE_NAME_DATA}")`,
           { inputs: [{ type: "text" }] }
         );
-        noteDataName = result[0] || this.constants.DEFAULT_NOTE_DATA_NAME;
-        await app.setSetting(this.constants.SETTING_KEY_NOTE_DATA, noteDataName);
+        noteDataName = result[0] || DEFAULT_NOTE_NAME_DATA;
+        await app.setSetting(SETTING_KEY_NOTE_DATA, noteDataName);
       }
       return noteDataName;
     },
