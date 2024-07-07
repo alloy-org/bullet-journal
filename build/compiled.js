@@ -1,4 +1,23 @@
 (() => {
+  // lib/constants/misc.js
+  var NOTE_OPTION_NAME = "Log Bullet Journal Entry";
+
+  // lib/constants/note-names.js
+  var DEFAULT_NOTE_NAME_DATA = "Bullet Journal Data";
+  var DEFAULT_NOTE_NAME_GRATITUDE = `Themes of "Gratitude" from five-minute bullet journal`;
+  var DEFAULT_NOTE_NAME_HIGHLIGHTS = `Themes of "Daily Highlights" from five-minute bullet journal`;
+  var DEFAULT_NOTE_NAME_LEARNING = `Themes of "Learning" from five-minute bullet journal`;
+  var DEFAULT_QUESTION_NOTE_TAGS = ["daily-jots/bullet-journal"];
+
+  // lib/constants/settings.js
+  var SETTING_KEY_NOTE_DATA = "Name of note where table is recorded";
+  var SETTING_KEY_DATE_FORMAT = "Date format, see plugin documentation";
+  var SETTING_KEY_TAG_APPLIED = `Tag(s) to apply to daily Daily Bullet entries (default "${DEFAULT_QUESTION_NOTE_TAGS[0]}")`;
+  var SETTING_KEY_DATA_TAG_APPLIED = "Tag to apply to data note";
+  var SETTING_KEY_GRATITUDE_NOTE = `Name of note that "Gratitude" heading links to (default "${DEFAULT_NOTE_NAME_GRATITUDE}")`;
+  var SETTING_KEY_HIGHLIGHTS_NOTE = `Name of note that "Daily Highlights" heading links to (default "${DEFAULT_NOTE_NAME_HIGHLIGHTS}")`;
+  var SETTING_KEY_LEARNING_NOTE = `Name of note that "What I Learned" heading links to (default "${DEFAULT_NOTE_NAME_LEARNING}")`;
+
   // lib/five-question-markdown.js
   var FIVE_QUESTION_MARKDOWN = `# [I am grateful for...](gratitude_link)
 1.  
@@ -29,26 +48,17 @@
 `;
 
   // lib/plugin.js
-  var DEFAULT_NOTE_NAME_DATA = "Bullet Journal Data";
-  var DEFAULT_NOTE_NAME_GRATITUDE = `Themes of "Gratitude" from five-minute bullet journal`;
-  var DEFAULT_NOTE_NAME_HIGHLIGHTS = `Themes of "Daily Highlights" from five-minute bullet journal`;
-  var DEFAULT_NOTE_NAME_LEARNING = `Themes of "Learning" from five-minute bullet journal`;
-  var DEFAULT_QUESTION_NOTE_TAGS = ["daily-jots/bullet-journal"];
   var TABLE_SECTION_NAME = `"Bullet Journal" Entries`;
   var TAG_SUFFIX = "bullet-journal";
-  var SETTING_KEY_NOTE_DATA = "Name of note where table is recorded";
-  var SETTING_KEY_DATE_FORMAT = "Date format, see plugin documentation";
-  var SETTING_KEY_TAG_APPLIED = `Tag(s) to apply to daily Daily Bullet entries (default "${DEFAULT_QUESTION_NOTE_TAGS[0]}")`;
-  var SETTING_KEY_DATA_TAG_APPLIED = "Tag to apply to data note";
-  var SETTING_KEY_GRATITUDE_NOTE = `Name of note that "What I Learned" heading links to (default "${DEFAULT_NOTE_NAME_GRATITUDE}")`;
-  var SETTING_KEY_HIGHLIGHTS_NOTE = `Name of note that "What I Learned" heading links to (default "${DEFAULT_NOTE_NAME_HIGHLIGHTS}")`;
-  var SETTING_KEY_LEARNING_NOTE = `Name of note that "What I Learned" heading links to (default "${DEFAULT_NOTE_NAME_LEARNING}")`;
+  var BACKLINK_NOTE_LABELS = ["gratitude", "highlights", "learning"];
   var plugin = {
-    _backlinkNoteHandles: {},
+    _backlinkNoteUuidFromLabel: {},
+    // Object mapping BACKLINK_NOTE_LABELS to note UUIDs
+    constants: {},
     // --------------------------------------------------------------------------
     // https://www.amplenote.com/help/developing_amplenote_plugins#dailyJotOption
     dailyJotOption: {
-      "Log Daily Entry": {
+      [NOTE_OPTION_NAME]: {
         async run(app) {
           await this._logDailyEntry(app);
         },
@@ -63,7 +73,7 @@
     },
     // --------------------------------------------------------------------------------------
     appOption: {
-      "Log daily entry": async function(app) {
+      [NOTE_OPTION_NAME]: async function(app) {
         await this._logDailyEntry(app);
       }
     },
@@ -83,11 +93,14 @@
         [SETTING_KEY_HIGHLIGHTS_NOTE, DEFAULT_NOTE_NAME_HIGHLIGHTS, "highlights"],
         [SETTING_KEY_LEARNING_NOTE, DEFAULT_NOTE_NAME_LEARNING, "learning"]
       ];
-      for (const [settingKey, defaultValue, noteHandle] of backlinkSets) {
+      for (const [settingKey, defaultValue, backlinkNoteLabel] of backlinkSets) {
         const noteName = await app.settings[settingKey] || defaultValue;
+        if (noteName === "none")
+          continue;
         const note = await app.findNote({ name: noteName });
         if (note) {
-          this._backlinkNoteHandles[noteHandle] = note;
+          console.debug(`Populated noteHandle`, backlinkNoteLabel, "with note", note);
+          this._backlinkNoteUuidFromLabel[backlinkNoteLabel] = note.uuid;
         }
         const rootTag = await this._rootDataTag(app);
         let noteTag;
@@ -95,12 +108,16 @@
           noteTag = `${rootTag}/${TAG_SUFFIX}`;
         }
         const noteUUID = await app.createNote(noteName, noteTag ? [noteTag] : []);
-        this._backlinkNoteHandles[noteHandle] = await app.findNote({ uuid: noteUUID });
-        await app.insertNoteContent(this._backlinkNoteHandles[noteHandle], `Periodically browse the "Backlinks" tab, and summarize any repeating patterns that you see:
+        const persistedNote = await app.findNote({ uuid: noteUUID });
+        this._backlinkNoteUuidFromLabel[backlinkNoteLabel] = persistedNote.uuid;
+        await app.insertNoteContent(
+          this._backlinkNoteUuidFromLabel[backlinkNoteLabel],
+          `Periodically browse the "Backlinks" tab, and summarize any repeating patterns that you see:
 
 \\
 
-`);
+`
+        );
       }
     },
     // --------------------------------------------------------------------------------------
@@ -111,31 +128,31 @@
       if (tagsApplied.length) {
         findArgument = { ...findArgument, tags: tagsApplied };
       }
-      let note = await app.findNote(findArgument);
-      if (note) {
-        const firstLine = FIVE_QUESTION_MARKDOWN.split("\n")[0];
-        const content = await app.getNoteContent(note);
-        if (content?.includes(firstLine)) {
-          console.log("Note content already includes journal, returning existing");
-          this._bulletNoteHandle = note;
+      let journalNote = await app.findNote(findArgument);
+      if (journalNote) {
+        const content = await app.getNoteContent(journalNote);
+        if (content?.length > 100) {
+          console.log("Note content already populated. Not adding");
+          this._bulletNoteHandle = journalNote;
           return;
         }
       } else {
         const noteUUID = await app.createNote(findArgument.name, findArgument.tags || []);
-        note = await app.findNote({ uuid: noteUUID });
+        journalNote = await app.findNote({ uuid: noteUUID });
       }
       let journalContent = FIVE_QUESTION_MARKDOWN;
-      for (const noteHandle of ["gratitude", "highlights", "learning"]) {
-        const backlinkNoteHandle = this._backlinkNoteHandles[noteHandle];
-        if (backlinkNoteHandle) {
-          journalContent = journalContent.replace(`${noteHandle}_link`, `/notes/${backlinkNoteHandle.uuid}`);
+      for (const backlinkNoteLabel of BACKLINK_NOTE_LABELS) {
+        const backlinkNoteUuid = this._backlinkNoteUuidFromLabel[backlinkNoteLabel];
+        console.debug("backlinkNoteUuid", backlinkNoteUuid, "for label", backlinkNoteLabel);
+        if (backlinkNoteUuid) {
+          journalContent = journalContent.replace(`${backlinkNoteLabel}_link`, `/notes/${backlinkNoteUuid}`);
         } else {
-          const titleRegex = new RegExp(`/\\[([\\w\\s]+)\\]\\(${noteHandle}_link\\)`);
+          const titleRegex = new RegExp(`/\\[([\\w\\s]+)\\]\\(${backlinkNoteLabel}_link\\)`);
           journalContent = journalContent.replace(titleRegex, "$1");
         }
       }
-      await app.insertNoteContent({ uuid: note.uuid }, journalContent);
-      this._bulletNoteHandle = note;
+      await app.insertNoteContent({ uuid: journalNote.uuid }, journalContent);
+      this._bulletNoteHandle = journalNote;
     },
     // --------------------------------------------------------------------------------------
     async _queryRecordMoodLevel(app) {
