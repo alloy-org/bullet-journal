@@ -1,5 +1,6 @@
 (() => {
   // lib/constants/misc.js
+
   var NOTE_OPTION_NAME = "Log Bullet Journal Entry";
 
   // lib/constants/note-names.js
