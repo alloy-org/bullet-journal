@@ -24,3 +24,16 @@ Your responses to these questions will be tagged with a hierarchy of your choosi
 A note containing a table of your data will also be created, with links to your daily entries.
 
 [The plugin can be installed free from the plugin directory](https://www.amplenote.com/plugins/aaEcia9F4yr56ro3pvZ52hjg).
+
+|                                                                                                                                                                                                                                                                                                                          | | |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-|-|
+| **Information**                                                                                                                                                                                                                                                                                                          |
+| This example imbues a cell with various superpowers, including:<br /><br />**-** ***Selected text features -***<br />Features invoked by selecting text and [choosing an option from the ensuing toolbar][^1].<br />[**Thesaurus**][^2]. Get 10 suggested synonyms that make sense in the context around the word. |
+\\
+[^1]: [choosing an option from the ensuing toolbar]()
+
+    ![](https://images.amplenote.com/c6cf84d6-ceb4-11ed-a7db-d2ab91c23399/53eb85c9-e7d3-4a7f-92e3-b68fa595113c.png)
+
+[^2]: [**Thesaurus**]()
+
+    ![](https://images.amplenote.com/c6cf84d6-ceb4-11ed-a7db-d2ab91c23399/847c257f-1954-454f-8b78-41ce7e1b6927.png)
