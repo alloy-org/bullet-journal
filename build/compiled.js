@@ -4,9 +4,9 @@
 
   // lib/constants/note-names.js
   var DEFAULT_NOTE_NAME_DATA = "Bullet Journal Data";
-  var DEFAULT_NOTE_NAME_GRATITUDE = `Themes of "Gratitude" from five-minute bullet journal`;
-  var DEFAULT_NOTE_NAME_HIGHLIGHTS = `Themes of "Daily Highlights" from five-minute bullet journal`;
-  var DEFAULT_NOTE_NAME_LEARNING = `Themes of "Learning" from five-minute bullet journal`;
+  var DEFAULT_NOTE_NAME_GRATITUDE = `Themes of "Gratitude" from bullet journal`;
+  var DEFAULT_NOTE_NAME_HIGHLIGHTS = `Themes of "Daily Highlights" from bullet journal`;
+  var DEFAULT_NOTE_NAME_LEARNING = `Themes of "Learning" from bullet journal`;
   var DEFAULT_QUESTION_NOTE_TAGS = ["daily-jots/bullet-journal"];
 
   // lib/constants/settings.js
@@ -19,7 +19,11 @@
   var SETTING_KEY_LEARNING_NOTE = `Name of note that "What I Learned" heading links to (default "${DEFAULT_NOTE_NAME_LEARNING}")`;
 
   // lib/five-question-markdown.js
-  var FIVE_QUESTION_MARKDOWN = `# [I am grateful for...](gratitude_link)
+  var FIVE_QUESTION_MARKDOWN = `Try to complete this self-calibration in around 5 minutes if possible. 
+The less time is spent on it, the greater the chances you can remain consistent with this prospective habit.
+
+
+# [I am grateful for...](gratitude_link)
 1.  
 2. 
 3. 
@@ -140,6 +144,12 @@
         const noteUUID = await app.createNote(findArgument.name, findArgument.tags || []);
         journalNote = await app.findNote({ uuid: noteUUID });
       }
+      const journalContent = this._journalContentWithNoteLinks();
+      await app.insertNoteContent({ uuid: journalNote.uuid }, journalContent);
+      this._bulletNoteHandle = journalNote;
+    },
+    // --------------------------------------------------------------------------------------
+    _journalContentWithNoteLinks() {
       let journalContent = FIVE_QUESTION_MARKDOWN;
       for (const backlinkNoteLabel of BACKLINK_NOTE_LABELS) {
         const backlinkNoteUuid = this._backlinkNoteUuidFromLabel[backlinkNoteLabel];
@@ -151,8 +161,7 @@
           journalContent = journalContent.replace(titleRegex, "$1");
         }
       }
-      await app.insertNoteContent({ uuid: journalNote.uuid }, journalContent);
-      this._bulletNoteHandle = journalNote;
+      return journalContent;
     },
     // --------------------------------------------------------------------------------------
     async _queryRecordMoodLevel(app) {
